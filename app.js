@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 const express = require('express');
 
-const {addNewRow} = require('./spreadsheet.js');
+const {modifyRow, addNewRow, deleteRowByDID, modifyNickname} = require('./spreadsheet.js');
 const { _client } = require('./discord.js')
 const app = express();
 require("dotenv").config();
@@ -10,7 +10,8 @@ _client.once('ready', async (bot) => {
     console.log(`Bot: ${bot.user.username}\nStatus: ${bot.presence.status}`)
 })
 
-const rolesList = ["SARGENTO", "SUB TENIENTE", "SUB JEFE", "PFA"]  // Agregar el rango PFA, para que lo encuentre al agregar a un nuevo PFA
+// Hacerlo un dic con el discord id de cada rango
+const rolesList = ["PFA","Cadete", "Agente", "Cabo", "Cabo 1°", "Sargento", "Sargento 1°", "Sargento Mayor", "Sub Teniente", "Teniente", "Sub Inspector", "Inspector", "Sub Comisario", "Comisario", "Sub Jefe", "Jefe", "Director"]  // Agregar el rango PFA, para que lo encuentre al agregar a un nuevo PFA
 
 _client.on('guildMemberUpdate', async (oldMember, newMember) => {
     if(oldMember._roles.includes(process.env.PFA_ID.toString()) &&
@@ -18,16 +19,13 @@ _client.on('guildMemberUpdate', async (oldMember, newMember) => {
     {
         if (oldMember.roles.cache.size < newMember.roles.cache.size) {  // Si hay menos rangos, se agregó uno
             newMember.roles.cache.forEach(role => {
-                if (!oldMember.roles.cache.has(role.id) && rolesList.includes(role.name)) { // Si el antiguo no tiene el nuevo rol y si éste pertenece a la lista de los rangos
+                if (!oldMember.roles.cache.has(role.id) && rolesList.includes(role.name)) // Si el antiguo no tiene el nuevo rol y si éste pertenece a la lista de los rangos
                     // Se escribe el campo Nombre y Rango del sheets para que ambos queden actualizados (buscando por user Discord ID)
-                    console.log("Nickname: " + newMember.nickname.split('-')[0])
-                    console.log("Discord ID: " + newMember.id)
-                    console.log("Rol añadido: " + role.name)
-                }
+                    modifyRow(newMember, role.name)
             });
         }
         else if(oldMember.nickname != newMember.nickname) // Cambio de nombre
-            console.log("Nickname: " + newMember.nickname)
+        modifyNickname(newMember)
         console.log("update");
     }
 
@@ -35,27 +33,21 @@ _client.on('guildMemberUpdate', async (oldMember, newMember) => {
         !newMember._roles.includes(process.env.PFA_ID.toString())) // EL VIEJO ES PFA PERO EL NUEVO NO. DELETE
     {
         // Se elimina directamente la fila del sheets buscando por user DiscordID
+        deleteRowByDID(newMember)
         console.log("Discord ID: " + newMember.id)
         console.log("delete");
     }
 
     if(!oldMember._roles.includes(process.env.PFA_ID.toString()) &&
         newMember._roles.includes(process.env.PFA_ID.toString())) // EL VIEJO NO ES PFA PERO EL NUEVO SI. ADD
-    {
-        newMember.roles.cache.forEach(role => {
-            if (role.id.toString() == process.env.PFA_ID && !oldMember.roles.cache.has(role.id) && rolesList.includes(role.name))
-            {
-                const values = {
-                    values: [
-                        ['', newMember.nickname, newMember.id, new Date().toLocaleString().split(',')[0]] // Se le agrega con el nombre que esté... cuando se lo cambie será un update
-                    ] 
+        {
+            newMember.roles.cache.forEach(role => {
+                if (role.id.toString() == process.env.PFA_ID && !oldMember.roles.cache.has(role.id) && rolesList.includes(role.name))
+                {
+                    addNewRow(newMember, 'RANGOS')
+                    console.log("\nNickname: " + newMember.nickname.split('-')[0])
+                    console.log("Discord ID: " + newMember.id)
                 }
-                addNewRow(values, newMember)
-                console.log("\nNickname: " + newMember.nickname.split('-')[0])
-                console.log("Discord ID: " + newMember.id)
-                // Ver de buscar el rango 'PFA' dentro del array de rangos
-                console.log("add");
-            }
         })
     }
 });
