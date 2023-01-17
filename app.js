@@ -25,17 +25,17 @@ _client.on('guildMemberUpdate', async (oldMember, newMember) => {
             });
         }
         else if(oldMember.nickname != newMember.nickname) // Cambio de nombre
-        modifyNickname(newMember)
-        console.log("update");
+            modifyNickname(newMember)
     }
 
     if(oldMember._roles.includes(process.env.PFA_ID.toString()) &&
         !newMember._roles.includes(process.env.PFA_ID.toString())) // EL VIEJO ES PFA PERO EL NUEVO NO. DELETE
     {
         // Se elimina directamente la fila del sheets buscando por user DiscordID
-        deleteRowByDID(newMember)
-        console.log("Discord ID: " + newMember.id)
-        console.log("delete");
+        newMember.roles.cache.forEach(role => {
+            if (role.name != 'PFA' && rolesList.includes(role.name)) 
+                deleteRowByDID(newMember, role.name, true)
+        });
     }
 
     if(!oldMember._roles.includes(process.env.PFA_ID.toString()) &&
@@ -43,11 +43,7 @@ _client.on('guildMemberUpdate', async (oldMember, newMember) => {
         {
             newMember.roles.cache.forEach(role => {
                 if (role.id.toString() == process.env.PFA_ID && !oldMember.roles.cache.has(role.id) && rolesList.includes(role.name))
-                {
                     addNewRow(newMember, 'RANGOS')
-                    console.log("\nNickname: " + newMember.nickname.split('-')[0])
-                    console.log("Discord ID: " + newMember.id)
-                }
         })
     }
 });
