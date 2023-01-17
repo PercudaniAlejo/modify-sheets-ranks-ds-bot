@@ -45,7 +45,12 @@ _client.on('guildMemberUpdate', async (oldMember, newMember) => {
         newMember.roles.cache.forEach(role => {
             if (role.id.toString() == process.env.PFA_ID && !oldMember.roles.cache.has(role.id) && rolesList.includes(role.name))
             {
-                addNewRow(newMember)
+                const values = {
+                    values: [
+                        ['', newMember.nickname, newMember.id, new Date().toLocaleString().split(',')[0]] // Se le agrega con el nombre que esté... cuando se lo cambie será un update
+                    ] 
+                }
+                addNewRow(values, newMember)
                 console.log("\nNickname: " + newMember.nickname.split('-')[0])
                 console.log("Discord ID: " + newMember.id)
                 // Ver de buscar el rango 'PFA' dentro del array de rangos
